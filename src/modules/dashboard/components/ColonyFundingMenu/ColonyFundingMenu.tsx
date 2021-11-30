@@ -48,7 +48,12 @@ interface Props {
 const displayName = 'dashboard.ColonyFundingMenu';
 
 const ColonyFundingMenu = ({
-  colony: { canMintNativeToken, version, isDeploymentFinished, colonyAddress },
+  colony: {
+    canUserMintNativeToken,
+    version,
+    isDeploymentFinished,
+    colonyAddress,
+  },
   colony,
   selectedDomainId,
 }: Props) => {
@@ -143,7 +148,7 @@ const ColonyFundingMenu = ({
           appearance={{ theme: 'blue' }}
           onClick={handleMintTokens}
           disabled={
-            !canMintNativeToken ||
+            !canUserMintNativeToken ||
             !isSupportedColonyVersion ||
             !isNetworkAllowed ||
             !hasRegisteredProfile ||

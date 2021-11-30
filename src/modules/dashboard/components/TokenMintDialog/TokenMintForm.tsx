@@ -15,13 +15,9 @@ import Toggle from '~core/Fields/Toggle';
 import NotEnoughReputation from '~dashboard/NotEnoughReputation';
 import MotionDomainSelect from '~dashboard/MotionDomainSelect';
 
-import { ColonyTokens, OneToken, useLoggedInUser } from '~data/index';
+import { ColonyTokens, OneToken } from '~data/index';
 import { getTokenDecimalsWithFallback } from '~utils/tokens';
-import { useTransformer } from '~utils/hooks';
 import { useDialogActionPermissions } from '~utils/hooks/useDialogActionPermissions';
-
-import { getAllUserRoles } from '../../../transformers';
-import { hasRoot } from '../../../users/checks';
 
 import { FormValues } from './TokenMintDialog';
 
@@ -52,7 +48,7 @@ interface Props extends ActionDialogProps {
 }
 
 const TokenMintForm = ({
-  colony: { canMintNativeToken },
+  colony: { canUserMintNativeToken },
   colony,
   isVotingExtensionEnabled,
   back,
@@ -62,16 +58,11 @@ const TokenMintForm = ({
   nativeToken,
   values,
 }: Props & FormikProps<FormValues>) => {
-  const { walletAddress } = useLoggedInUser();
-
-  const allUserRoles = useTransformer(getAllUserRoles, [colony, walletAddress]);
-  const canMintTokens = canMintNativeToken && hasRoot(allUserRoles);
-
   const requiredRoles: ColonyRole[] = [ColonyRole.Root];
 
   const [userHasPermission, onlyForceAction] = useDialogActionPermissions(
     colony.colonyAddress,
-    canMintTokens,
+    canUserMintNativeToken,
     isVotingExtensionEnabled,
     values.forceAction,
   );
@@ -98,7 +89,7 @@ const TokenMintForm = ({
               appearance={{ size: 'medium', margin: 'none', theme: 'dark' }}
               text={MSG.title}
             />
-            {canMintTokens && isVotingExtensionEnabled && (
+            {canUserMintNativeToken && isVotingExtensionEnabled && (
               <Toggle label={{ id: 'label.force' }} name="forceAction" />
             )}
           </div>
