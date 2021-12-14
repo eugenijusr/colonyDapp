@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { defineMessages } from 'react-intl';
 import { Extension } from '@colony/colony-js';
+import { useSelector } from 'react-redux';
 
 import Button from '~core/Button';
+import { SpinnerLoader } from '~core/Preloaders';
 import ColonyActionsDialog from '~dashboard/ColonyActionsDialog';
 import ExpendituresDialog from '~dashboard/ExpendituresDialog';
 import CreateDomainDialog from '~dashboard/CreateDomainDialog';
@@ -46,9 +48,19 @@ interface Props {
   ethDomainId?: number;
 }
 
+interface RootState {
+  users: {
+    wallet: {
+      isUserConnected: boolean;
+    };
+  };
+}
+
 const ColonyHomeActions = ({ colony, ethDomainId }: Props) => {
   const { networkId, username, ethereal } = useLoggedInUser();
   const { version: networkVersion } = useNetworkContracts();
+
+  const [isLoadingUser, setIsLoadingUser] = useState<boolean>(!ethereal);
 
   const { isVotingExtensionEnabled } = useEnabledExtensions({
     colonyAddress: colony.colonyAddress,
@@ -56,6 +68,13 @@ const ColonyHomeActions = ({ colony, ethDomainId }: Props) => {
 
   const { data } = useColonyExtensionsQuery({
     variables: { address: colony.colonyAddress },
+  });
+
+  useSelector((state: RootState) => {
+    const { isUserConnected } = state.users.wallet;
+    if (isUserConnected && isLoadingUser) {
+      setIsLoadingUser(false);
+    }
   });
 
   const startWizardFlow = useNaiveBranchingDialogWizard([
@@ -219,18 +238,23 @@ const ColonyHomeActions = ({ colony, ethDomainId }: Props) => {
   const mustUpgrade = colonyMustBeUpgraded(colony, networkVersion as string);
 
   return (
-    <Button
-      appearance={{ theme: 'primary', size: 'large' }}
-      text={MSG.newAction}
-      onClick={() => startWizardFlow('dashboard.ColonyActionsDialog')}
-      disabled={
-        mustUpgrade ||
-        !isNetworkAllowed ||
-        !hasRegisteredProfile ||
-        !colony?.isDeploymentFinished ||
-        mustUpgradeOneTx
-      }
-    />
+    <>
+      {isLoadingUser && <SpinnerLoader appearance={{ size: 'medium' }} />}
+      {!isLoadingUser && (
+        <Button
+          appearance={{ theme: 'primary', size: 'large' }}
+          text={MSG.newAction}
+          onClick={() => startWizardFlow('dashboard.ColonyActionsDialog')}
+          disabled={
+            mustUpgrade ||
+            !isNetworkAllowed ||
+            !hasRegisteredProfile ||
+            !colony?.isDeploymentFinished ||
+            mustUpgradeOneTx
+          }
+        />
+      )}
+    </>
   );
 };
 
