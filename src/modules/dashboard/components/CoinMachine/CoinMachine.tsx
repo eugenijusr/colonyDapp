@@ -170,11 +170,18 @@ const CoinMachine = ({
     if (!saleTokensData || !periodTokensData || !hasSaleStarted) {
       return undefined;
     }
+    const maxPerPeriodTokens = bigNumberify(maxPerPeriod);
+    const leftAvailableTokens = bigNumberify(
+      coinMachineTokenBalanceData?.coinMachineTokenBalance || '0',
+    );
+    const isPartialMaxPeriodTokens = maxPerPeriodTokens.gt(leftAvailableTokens);
 
     return {
       decimals: saleTokensData.coinMachineSaleTokens.sellableToken.decimals,
       soldPeriodTokens: bigNumberify(activeSold),
-      maxPeriodTokens: bigNumberify(maxPerPeriod),
+      maxPeriodTokens: isPartialMaxPeriodTokens
+        ? leftAvailableTokens.add(bigNumberify(activeSold))
+        : bigNumberify(maxPerPeriod),
       targetPeriodTokens: bigNumberify(targetPerPeriod),
     };
   }, [
@@ -184,6 +191,7 @@ const CoinMachine = ({
     activeSold,
     maxPerPeriod,
     targetPerPeriod,
+    coinMachineTokenBalanceData,
   ]);
 
   const totalTokens = useMemo(() => {
