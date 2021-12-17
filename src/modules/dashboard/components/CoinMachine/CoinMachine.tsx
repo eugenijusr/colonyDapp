@@ -15,7 +15,6 @@ import {
   useCurrentPeriodTokensQuery,
   Colony,
   useCoinMachineCurrentSalePeriodQuery,
-  useCoinMachineTokenBalanceQuery,
   useCoinMachineCurrentPeriodPriceQuery,
   useCoinMachineCurrentPeriodMaxUserPurchaseQuery,
   useCoinMachineTotalTokensQuery,
@@ -119,14 +118,6 @@ const CoinMachine = ({
   });
 
   const {
-    data: coinMachineTokenBalanceData,
-    loading: coinMachineTokenBalanceLoading,
-  } = useCoinMachineTokenBalanceQuery({
-    variables: { colonyAddress },
-    fetchPolicy: 'network-only',
-  });
-
-  const {
     data: totalTokensData,
     loading: totalTokensDataLoading,
     stopPolling: stopPollingTotalTokensData,
@@ -157,7 +148,7 @@ const CoinMachine = ({
   });
 
   const hasSaleStarted = !bigNumberify(
-    coinMachineTokenBalanceData?.coinMachineTokenBalance || 0,
+    periodTokensData?.currentPeriodTokens.tokenBalance || 0,
   ).isZero();
 
   const {
@@ -172,15 +163,18 @@ const CoinMachine = ({
     }
     const maxPerPeriodTokens = bigNumberify(maxPerPeriod);
     const leftAvailableTokens = bigNumberify(
-      coinMachineTokenBalanceData?.coinMachineTokenBalance || '0',
+      periodTokensData?.currentPeriodTokens.tokenBalance || '0',
     );
-    const isPartialMaxPeriodTokens = maxPerPeriodTokens.gt(leftAvailableTokens);
+    const soldPeriodTokens = bigNumberify(activeSold);
+    const isPartialMaxPeriodTokens = maxPerPeriodTokens
+      .sub(soldPeriodTokens)
+      .gte(leftAvailableTokens);
 
     return {
       decimals: saleTokensData.coinMachineSaleTokens.sellableToken.decimals,
-      soldPeriodTokens: bigNumberify(activeSold),
+      soldPeriodTokens,
       maxPeriodTokens: isPartialMaxPeriodTokens
-        ? leftAvailableTokens.add(bigNumberify(activeSold))
+        ? leftAvailableTokens.add(soldPeriodTokens)
         : bigNumberify(maxPerPeriod),
       targetPeriodTokens: bigNumberify(targetPerPeriod),
     };
@@ -191,7 +185,6 @@ const CoinMachine = ({
     activeSold,
     maxPerPeriod,
     targetPerPeriod,
-    coinMachineTokenBalanceData,
   ]);
 
   const totalTokens = useMemo(() => {
@@ -250,7 +243,6 @@ const CoinMachine = ({
     currentSalePeriodLoading ||
     !extensionsData?.processedColony?.installedExtensions ||
     periodTokensLoading ||
-    coinMachineTokenBalanceLoading ||
     totalTokensDataLoading
   ) {
     return (
